@@ -2,7 +2,7 @@
 ## Title: |cFF3bb273Ayije_CDM|r |cFFB36CFFExtensions|r
 ## Notes: Top-button move mode for Ayije_CDM elements
 ## Author: Seathasky
-## Version: 1.0.0
+## Version: 1.0.1
 ## X-Curse-Project-ID: 1506026
 ## OptionalDeps: Ayije_CDM, Blizzard_EditMode
 ## SavedVariables: Ayije_CDM_ExtensionsDB
@@ -19,6 +19,7 @@ ConfigHooks.lua
 Debug.lua
 Minimap.lua
 HandleHelpers.lua
+BuffPlaceholderHooks.lua
 Handles.lua
 ConfigUI.lua
 Main.lua

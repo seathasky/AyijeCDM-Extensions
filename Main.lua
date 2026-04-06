@@ -29,6 +29,7 @@ local ProfileHooks = NS and NS.ExtProfileHooks
 local Debug = NS and NS.ExtDebug
 local MinimapMod = NS and NS.ExtMinimap
 local HandleModule = NS and NS.ExtHandles
+local BuffPlaceholderHooks = NS and NS.ExtBuffPlaceholderHooks
 local ConfigUIMod = NS and NS.ExtConfigUI
 local ConfigHooksMod = NS and NS.ExtConfigHooks
 local uiManager
@@ -124,6 +125,9 @@ local function EnsureUIManager()
         IsMoveModeEnabled = function() return moveModeEnabled end,
         OnEnableMove = function()
             moveModeEnabled = true
+            if BuffPlaceholderHooks and BuffPlaceholderHooks.EnableForMoveMode then
+                BuffPlaceholderHooks.EnableForMoveMode(GetCDM())
+            end
             if UpdateGuiButtonVisual then UpdateGuiButtonVisual() end
             if UpdateHandles then UpdateHandles() end
             HideConfigFrame()
@@ -136,6 +140,9 @@ local function EnsureUIManager()
             if CDM and CDM.db then
                 CDM.db.castBarContainerLocked = true
                 PersistMoveSnapshot()
+            end
+            if BuffPlaceholderHooks and BuffPlaceholderHooks.DisableForMoveMode then
+                BuffPlaceholderHooks.DisableForMoveMode(CDM)
             end
             moveModeEnabled = false
             local p = uiManager and uiManager.EnsureMovePopup and uiManager:EnsureMovePopup()
@@ -292,6 +299,9 @@ EXT:SetScript("OnEvent", function(_, event, arg1)
             C_Timer.After(0.1, UpdateHandles)
         end
     elseif event == "PLAYER_LOGOUT" then
+        if moveModeEnabled and BuffPlaceholderHooks and BuffPlaceholderHooks.DisableForMoveMode then
+            BuffPlaceholderHooks.DisableForMoveMode(GetCDM())
+        end
         if moveDirtyThisSession then
             CaptureAllPositionsAndPersist()
         end

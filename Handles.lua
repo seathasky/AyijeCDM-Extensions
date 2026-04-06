@@ -209,13 +209,76 @@ function Handles.Create(ctx)
             ghost = CreateFrame("Frame", nil, UIParent)
             ghost:SetFrameStrata("DIALOG")
             ghost:SetFrameLevel(380)
-            ghost.tex = ghost:CreateTexture(nil, "ARTWORK")
-            ghost.tex:SetAllPoints()
-            ghost.tex:SetColorTexture(1, 0.82, 0, 0.30)
-            ghost.border = ghost:CreateTexture(nil, "OVERLAY")
+            ghost.bg = ghost:CreateTexture(nil, "BACKGROUND")
+            ghost.bg:SetAllPoints()
+            ghost.bg:SetColorTexture(1, 0.82, 0, 0)
+            ghost.icon = ghost:CreateTexture(nil, "OVERLAY", nil, 1)
+            ghost.icon:SetAllPoints()
+            ghost.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+            ghost.icon:SetDrawLayer("OVERLAY", 7)
+            ghost.border = ghost:CreateTexture(nil, "OVERLAY", nil, 2)
             ghost.border:SetAllPoints()
             ghost.border:SetColorTexture(1, 0.82, 0, 0.85)
             self.buffGroupGhosts[idx] = ghost
+        end
+
+        local function ResolveSpellTexture(spellID)
+            if type(spellID) ~= "number" or spellID <= 0 then return nil end
+            if C_Spell and C_Spell.GetSpellTexture then
+                return C_Spell.GetSpellTexture(spellID)
+            end
+            if GetSpellTexture then
+                return GetSpellTexture(spellID)
+            end
+            return nil
+        end
+
+        local iconTex
+        local spellList = groupData.spells
+        if type(spellList) == "table" then
+            for _, entry in ipairs(spellList) do
+                local spellID = entry
+                if type(entry) == "table" then
+                    spellID = entry.spellID or entry.id
+                end
+                local tex = ResolveSpellTexture(spellID)
+                if tex then
+                    iconTex = tex
+                    break
+                end
+            end
+            if not iconTex then
+                for k, v in pairs(spellList) do
+                    local spellID = nil
+                    if type(k) == "number" and type(v) == "boolean" then
+                        spellID = k
+                    elseif type(v) == "number" then
+                        spellID = v
+                    elseif type(v) == "table" then
+                        spellID = v.spellID or v.id
+                    end
+                    local tex = ResolveSpellTexture(spellID)
+                    if tex then
+                        iconTex = tex
+                        break
+                    end
+                end
+            end
+        end
+        if not iconTex then
+            iconTex = ResolveSpellTexture(groupData.iconSpellID)
+        end
+        if not iconTex then
+            iconTex = ResolveSpellTexture(groupData.spellID)
+        end
+        if iconTex then
+            ghost.icon:SetTexture(iconTex)
+            ghost.icon:SetVertexColor(1, 1, 1, 0.96)
+            ghost.bg:SetColorTexture(1, 0.82, 0, 0)
+        else
+            ghost.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+            ghost.icon:SetVertexColor(1, 1, 1, 0.90)
+            ghost.bg:SetColorTexture(1, 0.82, 0, 0.08)
         end
 
         local snap = self.ctx.Snap or function(v) return v end
@@ -288,6 +351,7 @@ function Handles.Create(ctx)
         if self:IsAnyHandleDragging() then return end
 
         local seen = {}
+        local usingGhostByBuffGroup = {}
 
         for _, spec in ipairs(self.ctx.DragTargets or {}) do
             local frame = spec.getFrame and spec.getFrame(CDM)
@@ -320,13 +384,15 @@ function Handles.Create(ctx)
                 if groupData then
                     local id = "buffgroup:" .. tostring(idx)
                     local label = "Buff Group " .. tostring(idx)
-                    local hasLiveBuff = container and container:IsShown() and HandleHelpers and HandleHelpers.ContainerHasVisibleChild and HandleHelpers.ContainerHasVisibleChild(container)
                     local configured = HandleHelpers and HandleHelpers.GroupHasConfiguredSpells and HandleHelpers.GroupHasConfiguredSpells(groupData)
                     local target = nil
-                    if hasLiveBuff then
+                    if container and container:IsShown() then
                         target = container
                     elseif configured then
                         target = GetBuffGroupGhostFrame(CDM, idx, groupData, container)
+                        if target then
+                            usingGhostByBuffGroup[idx] = true
+                        end
                     end
 
                     if target then
@@ -343,6 +409,7 @@ function Handles.Create(ctx)
                     local label = "Buff Group " .. tostring(idx)
                     local target = GetBuffGroupGhostFrame(CDM, idx, groupData, nil)
                     if target then
+                        usingGhostByBuffGroup[idx] = true
                         UpsertHandle(id, label, target, function(frame)
                             saveBuff(frame, idx)
                         end, seen, { textPrefix = "", useMinimalFill = true, hideBox = true, bigPlus = true })
@@ -360,8 +427,7 @@ function Handles.Create(ctx)
 
         local active = IsMoveModeEnabled()
         for idx, ghost in pairs(self.buffGroupGhosts) do
-            local id = "buffgroup:" .. tostring(idx)
-            ghost:SetShown(active and seen[id] == true)
+            ghost:SetShown(active and usingGhostByBuffGroup[idx] == true)
         end
     end
 
