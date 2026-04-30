@@ -1,8 +1,8 @@
-## Interface: 120001, 120000
+## Interface: 120005
 ## Title: |cFF3bb273Ayije_CDM|r |cFFB36CFFExtensions|r
 ## Notes: Top-button move mode for Ayije_CDM elements
 ## Author: Seathasky
-## Version: 1.0.1
+## Version: 1.0.2
 ## X-Curse-Project-ID: 1506026
 ## OptionalDeps: Ayije_CDM, Blizzard_EditMode
 ## SavedVariables: Ayije_CDM_ExtensionsDB
